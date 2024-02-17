@@ -2,29 +2,27 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  MethodNotAllowedException,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { CreateStoreDto } from './dto/create-store.dto';
+import { UpdateStoreDto } from './dto/update-store.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
-export class EmployeesService {
+export class StoresService {
   constructor(private prisma: PrismaService) {}
-  async create({ name, id_manager }: CreateEmployeeDto) {
+  async create({ name, id_manager }: CreateStoreDto) {
     try {
-      const employee = await this.prisma.employee.create({
+      const store = await this.prisma.store.create({
         data: { name, id_manager },
       });
-      return employee;
+      return store;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        // The .code property can be accessed in a type-safe manner
         if (error.code === 'P2002') {
           throw new ConflictException(
-            `Employee with name: ${name} already Exist, try again`,
+            `Store with name: ${name} already Exist, try again`,
           );
         }
         if (error.code === 'P2003') {
@@ -40,50 +38,61 @@ export class EmployeesService {
   }
 
   async findAll() {
-    const employees = await this.prisma.employee.findMany();
+    const stores = await this.prisma.store.findMany();
     try {
-      return employees;
+      return stores;
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
-  async findAllManagers() {
-    const managers = await this.prisma
-      .$queryRaw`select distinct e.id_manager,m.name
-	from "Employee" e
-	inner join "Employee" m on 
-	m.id = e.id_manager`;
+  async findAllDetails() {
+    const stores = await this.prisma.$queryRaw`SELECT 
+  "Store".id,
+  "Store".name,
+  "Store".id_manager,
+  "Employee".name as name_manager,
+  (SELECT COUNT(*) as total_emp
+   	FROM public."Employee"
+	WHERE id_manager = "Store".id_manager)
+FROM 
+  "Store" 
+  	INNER JOIN "Employee" ON
+  	"Store".id_manager = "Employee".id`;
     try {
-      return managers;
+      return JSON.stringify(
+        stores,
+        (key, value) => (typeof value === 'bigint' ? value.toString() : value), // return everything else unchanged
+      );
     } catch (error) {
+      console.error(error.code);
       throw new BadRequestException(error.message);
     }
   }
 
   async findOne(id: number) {
-    const employee = await this.prisma.employee.findUnique({
+    const store = await this.prisma.store.findUnique({
       where: { id },
     });
 
-    if (!employee) {
-      throw new NotFoundException(`Employee With id: ${id} not found`);
+    if (!store) {
+      throw new NotFoundException(`Store With id: ${id} not found`);
     }
 
     try {
-      return employee;
+      return store;
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
-  async update(id: number, { name, id_manager }: UpdateEmployeeDto) {
+  async update(id: number, { name, id_manager }: UpdateStoreDto) {
     try {
-      const employee = await this.prisma.employee.update({
+      const store = await this.prisma.store.update({
         where: { id },
         data: { name, id_manager },
       });
-      return employee;
+      return store;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2003') {
@@ -93,7 +102,7 @@ export class EmployeesService {
         }
         if (error.code === 'P2002') {
           throw new ConflictException(
-            `Employee with name: ${name} already Exist, try again`,
+            `Store with name: ${name} already Exist, try again`,
           );
         }
       }
@@ -105,17 +114,12 @@ export class EmployeesService {
 
   async remove(id: number) {
     try {
-      await this.prisma.employee.delete({ where: { id } });
-      return `Employee with id: ${id} deleted success`;
+      await this.prisma.store.delete({ where: { id } });
+      return `Store with id: ${id} deleted success`;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
           throw new NotFoundException(`manager with id: ${id} not found`);
-        }
-        if (error.code === 'P2003') {
-          throw new MethodNotAllowedException(
-            `manager with id: ${id} is a manager of store update store manager please before delete this admin`,
-          );
         }
       }
       throw new BadRequestException(

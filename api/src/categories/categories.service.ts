@@ -1,3 +1,5 @@
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 import {
   BadRequestException,
   ConflictException,
@@ -5,31 +7,23 @@ import {
   MethodNotAllowedException,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
-export class EmployeesService {
+export class CategoriesService {
   constructor(private prisma: PrismaService) {}
-  async create({ name, id_manager }: CreateEmployeeDto) {
+  async create({ name }: CreateCategoryDto) {
     try {
-      const employee = await this.prisma.employee.create({
-        data: { name, id_manager },
+      const category = await this.prisma.category.create({
+        data: { name },
       });
-      return employee;
+      return category;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        // The .code property can be accessed in a type-safe manner
         if (error.code === 'P2002') {
           throw new ConflictException(
-            `Employee with name: ${name} already Exist, try again`,
-          );
-        }
-        if (error.code === 'P2003') {
-          throw new NotFoundException(
-            `manager with id: ${id_manager} not found, choose another one`,
+            `Category with name: ${name} already Exist, try again`,
           );
         }
       }
@@ -40,50 +34,37 @@ export class EmployeesService {
   }
 
   async findAll() {
-    const employees = await this.prisma.employee.findMany();
+    const categories = await this.prisma.category.findMany();
     try {
-      return employees;
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async findAllManagers() {
-    const managers = await this.prisma
-      .$queryRaw`select distinct e.id_manager,m.name
-	from "Employee" e
-	inner join "Employee" m on 
-	m.id = e.id_manager`;
-    try {
-      return managers;
+      return categories;
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
   async findOne(id: number) {
-    const employee = await this.prisma.employee.findUnique({
+    const category = await this.prisma.category.findUnique({
       where: { id },
     });
 
-    if (!employee) {
-      throw new NotFoundException(`Employee With id: ${id} not found`);
+    if (!category) {
+      throw new NotFoundException(`Category With id: ${id} not found`);
     }
 
     try {
-      return employee;
+      return category;
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
-  async update(id: number, { name, id_manager }: UpdateEmployeeDto) {
+  async update(id: number, { name }: UpdateCategoryDto) {
     try {
-      const employee = await this.prisma.employee.update({
+      const category = await this.prisma.category.update({
         where: { id },
-        data: { name, id_manager },
+        data: { name },
       });
-      return employee;
+      return category;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2003') {
@@ -93,7 +74,7 @@ export class EmployeesService {
         }
         if (error.code === 'P2002') {
           throw new ConflictException(
-            `Employee with name: ${name} already Exist, try again`,
+            `Category with name: ${name} already Exist, try again`,
           );
         }
       }
@@ -105,8 +86,8 @@ export class EmployeesService {
 
   async remove(id: number) {
     try {
-      await this.prisma.employee.delete({ where: { id } });
-      return `Employee with id: ${id} deleted success`;
+      await this.prisma.category.delete({ where: { id } });
+      return `Category with id: ${id} deleted success`;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {

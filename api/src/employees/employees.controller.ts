@@ -26,6 +26,11 @@ export class EmployeesController {
     return this.employeesService.findAll();
   }
 
+  @Get('/managers')
+  findAllManagers() {
+    return this.employeesService.findAllManagers();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: string) {
     return this.employeesService.findOne(+id);
@@ -33,14 +38,14 @@ export class EmployeesController {
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
     return this.employeesService.update(+id, updateEmployeeDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseIntPipe) id: string) {
     return this.employeesService.remove(+id);
   }
 }
